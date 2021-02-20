@@ -1,0 +1,53 @@
+<div style="max-width: 600px; margin: auto">
+  <div class="mat-elevation-z8" style="display: block; max-width: 1200px"> <!--style="margin: 1px; border: 1px solid #ddd"-->
+    <mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
+      <!-- Route Definition -->
+      <ng-container matColumnDef="route">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> Route </mat-header-cell>
+        <mat-cell *matCellDef="let route"> {{route.route_name}} </mat-cell>
+      </ng-container>
+
+      <!-- Trip ID Definition -->
+      <ng-container matColumnDef="route_id">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> Route ID </mat-header-cell>
+        <mat-cell *matCellDef="let route"> {{route.route_id}} </mat-cell>
+      </ng-container>
+
+      <!-- Analytics Definition -->
+      <ng-container matColumnDef="watch">
+        <mat-header-cell *matHeaderCellDef> Watch </mat-header-cell>
+        <mat-cell *matCellDef="let route">
+          <button mat-button (click)="watchRoute(route.route_id)">
+            <mat-icon>analytics</mat-icon>
+          </button>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Modify Definition -->
+      <!--<ng-container matColumnDef="modify">
+        <mat-header-cell *matHeaderCellDef> Modify </mat-header-cell>
+        <mat-cell *matCellDef="let trip">
+          <button mat-button (click)="modifyUser(user.id)" *ngIf="user.role != 'ADMIN'">
+            <mat-icon>settings</mat-icon>
+          </button>
+        </mat-cell>
+      </ng-container>-->
+
+      <!-- Delete Definition -->
+      <!--<ng-container matColumnDef="delete">
+        <mat-header-cell *matHeaderCellDef> Delete </mat-header-cell>
+        <mat-cell *matCellDef="let user">
+          <button mat-button (click)="deleteUser(user.id)" *ngIf="user.role != 'ADMIN'">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-cell>
+      </ng-container>-->
+
+      <!-- Header and Row Declarations -->
+      <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+      <mat-row *matRowDef="let route; columns: displayedColumns;"></mat-row>
+    </mat-table>
+
+    <mat-paginator [pageSize]=20 [pageSizeOptions]="[5, 10, 20, 50, 100]" showFirstLastButtons></mat-paginator>
+  </div>
+</div>

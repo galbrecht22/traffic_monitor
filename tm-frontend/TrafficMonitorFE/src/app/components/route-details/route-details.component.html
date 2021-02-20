@@ -1,0 +1,34 @@
+<div class="col-md-6">
+  <div *ngIf="currentRoute">
+    <h4>Route</h4>
+    <div>
+      <label><strong>Route ID:</strong></label> {{ currentId }}
+    </div>
+    <div>
+      <label><strong>Route name:</strong></label>
+      {{ currentRouteName }}
+    </div>
+  </div>
+</div>
+
+<div>
+  <ng-container #outlet>
+  </ng-container>
+</div>
+
+<div>
+  <ng-template #content>
+    <highcharts-chart *ngIf="data" [Highcharts]="highcharts"
+                      [options]="chartOptions" style="width: 100%; height: 400px; display: block;">
+    </highcharts-chart>
+  </ng-template>
+</div>
+
+<div class="input-group-append" style="display: inline-flex">
+  <span>Frequency:</span>
+  <div>
+  <button class="btn btn-outline-secondary" (click)="changeInterval(15)">15 Minutes</button>
+  <button class="btn btn-outline-secondary" (click)="changeInterval(30)">30 Minutes</button>
+  <button class="btn btn-outline-secondary" (click)="changeInterval(60)">60 Minutes</button>
+  </div>
+</div>

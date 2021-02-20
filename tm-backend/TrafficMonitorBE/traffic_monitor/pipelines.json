@@ -1,0 +1,97 @@
+[
+  {
+    "$addFields": {
+      "trips": {
+        "$map": {
+          "input": "$trips",
+          "as": "row",
+          "in": {
+            "trip_id": "$$row.trip_id",
+            "destination": "$$row.destination",
+            "departure_time": "$$row.departure_time",
+            "departure_timestamp": "$$row.departure_timestamp",
+            "travel_time": "$$row.travel_time",
+            "delay": "$$row.delay",
+            "timeBucket": {
+              "$mod": [
+                {
+                  "$multiply": [
+                    {
+                      "$floor": {
+                        "$divide": [
+                          "$$row.departure_timestamp",
+                          1800
+                        ]
+                      }
+                    },
+                    1800
+                  ]
+                },
+                86400
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "$match": {
+      "route_id": "0050"
+    }
+  },
+  {
+    "$unwind": "$trips"
+  },
+  {
+    "$project": {
+      "_id": 1,
+      "route_id": 1,
+      "route_name": 1,
+      "trips": {
+        "trip_id": 1,
+        "destination": 1,
+        "departure_time": 1,
+        "departure_timestamp": 1,
+        "timeBucket": 1,
+        "travel_time": 1,
+        "delay": 1
+      }
+    }
+  },
+  {
+    "$group": {
+      "_id": {
+        "route_id": "$route_id",
+		"route_name": "$route_name",
+        "timeBucket": "$trips.timeBucket"
+      },
+      "avgTravel": {
+        "$avg": "$trips.travel_time"
+      },
+      "avgDelay": {
+        "$avg": "$trips.delay"
+      }
+    }
+  },
+  {
+    "$project": {
+      "_id": 0,
+      "route_id": "$_id.route_id",
+	  "route_name": "$_id.route_name",
+      "timeBucket": "$_id.timeBucket",
+      "avgTravel": {
+        "$floor": "$avgTravel"
+      },
+      "avgDelay": {
+        "$floor": "$avgDelay"
+      }
+    }
+  },
+  {
+    "$sort": {
+      "route_id": 1,
+      "timeBucket": 1
+    }
+  }
+]

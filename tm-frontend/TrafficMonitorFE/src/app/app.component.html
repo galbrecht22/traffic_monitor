@@ -1,0 +1,43 @@
+<div id="wrapper">
+  <header>
+    <div style="width: 40%; margin-left: 50px; display: inline-flex; align-items: center;">
+      <a href="#">
+        <img style="height: 100px;" src="./assets/images/trafficMonitor_logo_w_v2.png">
+      </a>
+    </div>
+    <div class="fill">
+      <!--<img src="./assets/images/bkkbusz.jpg">-->
+      <div class="hero-image">
+        <div style="bottom: 0; position: absolute;">
+          <nav class="navbar navbar-expand navbar-dark">
+            <div class="navbar-nav mr-auto" style="margin-left: 20px;">
+              <li class="nav-item" style="margin-right: 20px;">
+                <a routerLink="trips" class="nav-link">Járatok</a>
+              </li>
+              <li class="nav-item" style="margin-right: 20px;">
+                <a routerLink="routes" class="nav-link">Útvonalak</a>
+              </li>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+</div>
+<!--<div>
+  <nav class="navbar navbar-expand navbar-dark bg-dark">
+    <a href="#" class="navbar-brand">TrafficMonitor</a>
+    <div class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a routerLink="trips" class="nav-link">Trips</a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="routes" class="nav-link">Routes</a>
+      </li>
+    </div>
+  </nav>
+  <app-output-graph></app-output-graph>-->
+<!--<router-outlet></router-outlet>-->
+  <div class="mt-3">
+    <router-outlet></router-outlet>
+  </div>

@@ -1,0 +1,140 @@
+<div class="outer-wrapper">
+  <div class="inner-wrapper">
+    <div class="traffic">
+      <div class="title">Aktuális korlátozások</div>
+        <!--<div class="routes">
+          <div *ngFor="let route_name of this.routes">
+          <button class="routeBtn">{{route_name}}</button>
+        </div>
+      </div>-->
+      <div style="max-width: 600px; margin: 10px;">
+        <div class="mat-elevation-z8" style="display: block; max-width: 1200px"> <!--style="margin: 1px; border: 1px solid #ddd"-->
+          <mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
+
+            <!-- Route Definition -->
+            <ng-container matColumnDef="description">
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Leírás </mat-header-cell>
+              <mat-cell style="font-size: 12px;" *matCellDef="let alert"> {{alert.header}} </mat-cell>
+            </ng-container>
+
+            <!-- Trip ID Definition -->
+            <ng-container matColumnDef="routes">
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Útvonalak </mat-header-cell>
+              <mat-cell *matCellDef="let alert">
+                <div class="routes">
+                <div *ngFor="let route of alert.routes"><button class="routeBtn">{{route.route_name}}</button></div>
+                </div>
+              </mat-cell>
+            </ng-container>
+
+            <!-- Header and Row Declarations -->
+            <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+            <mat-row *matRowDef="let alert; columns: displayedColumns;"></mat-row>
+          </mat-table>
+
+          <mat-paginator [pageSize]=5 [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+        </div>
+      </div>
+
+    </div>
+    <div class="dashboard">
+      <!--<p style="text-align: center;">Térkép helye</p>-->
+      <div class="flex-row">
+        <div id="traffic_map" (click)="onTrafficMapClick($event)"><!--
+          <div id="popup"></div>-->
+        </div>
+        <!--<div id="info"></div>-->
+      </div>
+    </div>
+    <div class="weather">
+      <mat-card class="mat-elevation-z5">
+        <mat-card-header>
+          <mat-card-title>Budapest</mat-card-title>
+          <mat-card-subtitle>{{this.currentDate | date: 'shortDate'}}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="flex-row">
+            <div class="temp">
+              <span class="big-text">{{this.weather.temperature | number:'0.0-0'}} °C</span>
+              <span style="font-size: 12px;">Szél</span>
+              <span style="font-size: 12px;">{{this.weather.wind_speed | number:'0.0-0'}} km/h</span>
+            </div>
+            <div class="outlook">
+              <img class="image" src="http://openweathermap.org/img/wn/{{this.weather.icon}}@2x.png">
+              <span style="font-size: 12px;">{{this.weather.description | titlecase}}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <div style="margin-top: 20px;">
+        <div *ngIf="currentTrip">
+          <!--<h4>Trip</h4>
+          <div>
+            <label><strong>Trip ID:</strong></label> {{ currentTrip.trip_id }}
+          </div>
+          <div>
+            <label><strong>Route:</strong></label>
+            {{ currentTrip.route_name }}
+          </div>
+
+          <a class="badge badge-warning" href="/trips/{{ currentTrip.trip_id }}">
+            Watch
+          </a>-->
+          <!--<cdk-virtual-scroll-viewport itemSize="50" class="example-viewport">
+            <div *cdkVirtualFor="let stop of currentTrip.stop_times" class="example-item">{{stop.name}}</div>
+          </cdk-virtual-scroll-viewport>-->
+          <div class="current-trip-info">
+            <div class="currentTripBtn">
+              <a href="/trips/{{currentTrip.trip_id}}">
+                <button class="routeBtn">{{currentTrip.route_name}}</button>
+              </a>
+            </div>
+            <div class="currentTripHeadsign">( {{currentTrip.destination}} )</div>
+          </div>
+          <div style="max-width: 300px; margin: 0 10px 0 10px;">
+            <div class="mat-elevation-z8 table-responsive"> <!--style="margin: 1px; border: 1px solid #ddd"-->
+              <mat-table [dataSource]="stopDataSource" class="mat-elevation-z8">
+
+                <!-- Route Definition -->
+                <ng-container matColumnDef="idx">
+                  <mat-header-cell *matHeaderCellDef></mat-header-cell>
+                  <mat-cell style="font-size: 10px;" *matCellDef="let stop; let i = index"> {{i+1}} </mat-cell>
+                </ng-container>
+
+                <!-- Route Definition -->
+                <ng-container matColumnDef="name">
+                  <mat-header-cell *matHeaderCellDef> Megálló </mat-header-cell>
+                  <mat-cell style="font-size: 12px;" *matCellDef="let stop"> {{stop.stop_name}} </mat-cell>
+                </ng-container>
+
+                <!-- Trip ID Definition -->
+                <ng-container matColumnDef="reference_time">
+                  <mat-header-cell *matHeaderCellDef> Érkezés </mat-header-cell>
+                  <mat-cell style="font-size: 12px;" *matCellDef="let stop"> {{stop.reference_time | date: 'HH:mm'}} </mat-cell>
+                </ng-container>
+
+                <!-- Trip ID Definition -->
+                <ng-container matColumnDef="predicted_reference_time">
+                  <mat-header-cell *matHeaderCellDef> Valós </mat-header-cell>
+                  <mat-cell style="font-size: 12px;" *matCellDef="let stop; let i = index"
+                  [ngStyle]="{'opacity': (stop.is_predicted == false) ? '1.0' : '0.4',
+                              'color': (stop.actual_timestamp - stop.reference_timestamp < 60) ? '#00BB00' : 'red'}"> {{stop.actual_time | date: 'HH:mm'}} </mat-cell>
+                </ng-container>
+
+                <!-- Header and Row Declarations -->
+                <mat-header-row *matHeaderRowDef="displayedStopColumns; sticky: true"></mat-header-row>
+                <mat-row *matRowDef="let stop; columns: displayedStopColumns;"></mat-row>
+              </mat-table>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!currentTrip">
+          <br />
+          <p>Please click on a Trip...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer></footer>
+</div>

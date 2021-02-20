@@ -1,0 +1,314 @@
+:host {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.top-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+mat-card {
+  width: 250px;
+}
+
+mat-card-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+mat-card-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+
+  > div {
+    flex: 50%;
+    border-radius: 10px;
+    padding: 5px;
+  }
+
+  > .outlook {
+    color: black;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  > .temp {
+    background: lightblue;
+    color: black;
+    margin-right: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .big-text {
+    font-size: 20px;
+    margin-bottom: 5px;
+  }
+
+  .image {
+    height: 40px;
+  }
+}
+
+
+.wrapper {
+  display: flex;
+  flex-flow: row wrap;
+  font-weight: bold;
+  text-align: center;
+}
+
+.wrapper > * {
+  padding: 10px;
+  flex: 1 100%;
+}
+
+.header {
+  background: tomato;
+}
+
+.footer {
+  background: lightgreen;
+}
+
+.main {
+  text-align: left;
+  background: deepskyblue;
+}
+
+.aside-1 {
+  background: gold;
+}
+
+.aside-2 {
+  background: hotpink;
+}
+
+@media all and (min-width: 600px) {
+  .aside { flex: 1 0 0; }
+}
+
+@media all and (min-width: 800px) {
+  .main    { flex: 3 0px; }
+  .aside-1 { order: 1; }
+  .main    { order: 2; }
+  .aside-2 { order: 3; }
+  .footer  { order: 4; }
+}
+
+body {
+  padding: 2em;
+}
+
+.outer-wrapper {
+  display: flex;
+  flex-flow: column nowrap;
+  width: 100%;
+  height: 100%;
+}
+
+.inner-wrapper {
+  display: flex;
+  flex-flow: row nowrap;
+  width: 100%;
+  height: 100%;
+}
+
+.traffic {
+  display: flex;
+  flex-flow: column wrap;
+  width: 20%;
+  height: 100%;
+}
+
+.dashboard {
+  display: flex;
+  flex-flow: column nowrap;
+  width: 62%;
+  height: 100%;
+}
+
+.weather {
+  display: flex;
+  flex-flow: column nowrap;
+  width: 18%;
+  height: 100%;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+}
+
+div.traffic > div.title {
+  margin: 0 10px 0 10px;
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 10px;
+  background: gold;
+  padding: 5px 20px 5px 20px;
+  text-align: center;
+}
+
+.routes {
+  display: inline-flex;
+  flex-flow: row wrap;
+  margin: 2px;
+  justify-content: space-between;
+}
+
+.routeBtn {
+  background: #00A0E3;
+  color: white;
+  width: fit-content;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 10px;
+  margin: 1px;
+}
+
+#traffic_map {
+  height: 500px;
+  width: 100%;
+}
+
+.example-viewport {
+  height: 290px;
+  width: 250px;
+  border: 1px solid black;
+}
+
+.example-item {
+  height: 50px;
+  font-size: 12px;
+}
+
+.table-responsive {
+  display: block;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  mat-table {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 1rem;
+    display: table;
+    border-collapse: collapse;
+  }
+  mat-row, mat-header-row {
+    //display: table-row;
+    vertical-align: middle;
+  }
+
+  mat-header-row {
+    min-height: 30px;
+  }
+
+  mat-cell, mat-header-cell {
+    //word-wrap: initial;
+    //display: table-cell;
+    //padding: 0px 5px;
+    //line-break: auto;
+    //white-space: nowrap;
+    //overflow: hidden;
+    //vertical-align: middle;
+    text-align: center;
+  }
+  mat-header-row {
+    margin: 0px;
+  }
+}
+
+.mat-column-name {
+  word-wrap: break-word !important;
+  white-space: unset !important;
+  flex: 0 0 40% !important;
+  width: 40% !important;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+
+  word-break: break-word;
+
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+
+  justify-content: center;
+}
+
+.mat-column-reference_time, .mat-column-predicted_reference_time {
+  word-wrap: break-word !important;
+  white-space: unset !important;
+  flex: 0 0 25% !important;
+  width: 25% !important;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+
+  word-break: break-word;
+
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+
+  justify-content: center;
+}
+
+.mat-column-predicted_reference_time {
+  padding-right: 5px;
+}
+
+.mat-column-idx {
+  word-wrap: break-word !important;
+  white-space: unset !important;
+  flex: 0 0 10% !important;
+  width: 10% !important;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+
+  word-break: break-word;
+
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+
+  justify-content: center;
+
+  padding-left: 5px;
+}
+
+.current-trip-info {
+  display: flex;
+  flex-flow: row nowrap;
+  margin: 0 10px 0 10px;
+  border-radius: 10px;
+  background: lightgray;
+  padding: 5px 10px 5px 10px;
+  text-align: center;
+  justify-content: space-between;
+}
+
+.currentTripBtn {
+  min-width: 30px;
+}
+
+.currentTripHeadsign {
+  display: contents;
+  font-size: 12px;
+  min-width: 60px;
+}
