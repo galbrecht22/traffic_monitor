@@ -2,7 +2,7 @@ import os
 from pymongo import MongoClient
 import mysql.connector
 from services.APIConnector import APIConnector
-from controller.TripController import TripController
+from controller.CentralController import CentralController
 
 KEY = os.environ.get('TM_BKK_API_KEY').replace('\'', '')
 VERSION = int(os.environ.get('TM_BKK_API_VERSION').replace('\'', ''))
@@ -33,5 +33,5 @@ client = MongoClient(MONGO_HOST, MONGO_PORT)
 dynamic_db = client[MONGO_DATABASE]
 
 # Start controller
-tripController = TripController(api_connector=api_connector, static_db=static_db, dynamic_db=dynamic_db)
-tripController.run()
+centralController = CentralController(api_connector=api_connector, static_db=static_db, dynamic_db=dynamic_db)
+centralController.run()
