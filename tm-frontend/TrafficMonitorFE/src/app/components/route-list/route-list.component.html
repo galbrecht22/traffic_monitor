@@ -1,13 +1,13 @@
 <div style="max-width: 600px; margin: auto">
   <div class="mat-elevation-z8" style="display: block; max-width: 1200px"> <!--style="margin: 1px; border: 1px solid #ddd"-->
     <mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
-      <!-- Route Definition -->
+      <!-- Route Name Definition -->
       <ng-container matColumnDef="route">
         <mat-header-cell *matHeaderCellDef mat-sort-header> Route </mat-header-cell>
         <mat-cell *matCellDef="let route"> {{route.route_name}} </mat-cell>
       </ng-container>
 
-      <!-- Trip ID Definition -->
+      <!-- Route ID Definition -->
       <ng-container matColumnDef="route_id">
         <mat-header-cell *matHeaderCellDef mat-sort-header> Route ID </mat-header-cell>
         <mat-cell *matCellDef="let route"> {{route.route_id}} </mat-cell>

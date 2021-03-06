@@ -1,0 +1,27 @@
+<div *ngIf="currentStop" class="edit-form">
+  <div class="col-md-6">
+    <div *ngIf="currentStop">
+      <h4>Stop</h4>
+      <div>
+        <label><strong>Stop ID:</strong></label> {{ currentStop.stop_id }}
+      </div>
+      <div>
+        <label><strong>Stop name:</strong></label> {{ currentStop.stop_name }}
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="!currentStop">
+  <br/>
+  <p>Cannot access stop...</p>
+</div>
+<div>
+  <ng-container #outlet>
+  </ng-container>
+</div>
+<div>
+  <ng-template #content>
+    <highcharts-chart *ngIf="data" [Highcharts]="highcharts" [options]="chartOptions" style="width: 100%; height: 400px; display: block;">
+    </highcharts-chart>
+  </ng-template>
+</div>

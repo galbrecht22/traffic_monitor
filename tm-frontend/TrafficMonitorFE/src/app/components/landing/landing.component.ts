@@ -16,6 +16,7 @@ import * as olProj from 'ol/proj';
 import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
 import {MultiPoint, Point} from 'ol/geom';
 import {useGeographic} from 'ol/proj';
+import * as olExtent from 'ol/extent';
 import 'ol/ol.css';
 import {TripService} from "../../services/trip.service";
 
@@ -48,6 +49,8 @@ export class LandingComponent implements OnInit, AfterViewInit {
 
   currentTrip: null;
   currentIndex: -1;
+
+  activeFeature = null;
 
   @ViewChild(MatSort) sort: MatSort;
   @ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
@@ -129,7 +132,8 @@ export class LandingComponent implements OnInit, AfterViewInit {
         const feature = new Feature({
           geometry: new Point([trip.location.lon, trip.location.lat]),
           color,
-          trip
+          trip,
+          originalStyle: null
         });
         features.push(feature);
         // points.push([trip.location.lon, trip.location.lat]);
@@ -200,11 +204,38 @@ export class LandingComponent implements OnInit, AfterViewInit {
       if (feature) {
         console.log(feature.getProperties().trip);
         this.setActiveTrip(feature.getProperties().trip, 0);
-      }
+        if (this.activeFeature !== null) {
+          this.activeFeature.setStyle(this.activeFeature.orgininalStyle);
+          this.activeFeature.changed();
+        }
+        this.activeFeature = feature;
+        this.activeFeature.originalStyle = this.activeFeature.getStyle();
+        this.activeFeature.setStyle(new Style({
+            image: new Circle({
+              radius: 8,
+              fill: new Fill({ color: 'black'}),
+              stroke: new Stroke({
+                width: 6, color: 'white'
+              }),
+            }),
+          }));
+        feature.changed();
+        //let e = feature.getGeometry().getExtent();
+        //let center = olExtent.getCenter(e);
+        //this.trafficMap.setView(new ol.View({
+        //  center: [center[0], center[1]],
+        //  zoom: 11
+        //}));
+        }
       else {
         if (this.currentTrip) {
           this.currentTrip = null;
           this.currentIndex = -1;
+        }
+        if (this.activeFeature) {
+          this.activeFeature.setStyle(this.activeFeature.originalStyle);
+          this.activeFeature.changed();
+          this.activeFeature = null;
         }
       }
       // console.log(feature);

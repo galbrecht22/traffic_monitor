@@ -28,7 +28,7 @@ while True:
         trip['trip_id'] = t['trip_id']
         trip['destination'] = t['destination']
         trip['departure_time'] = t['departure_time']
-        trip['departure_timestamp'] = datetime.timestamp(datetime.strptime(t['departure_time'], '%Y-%m-%d %H:%M:%S'))
+        # trip['departure_timestamp'] = datetime.timestamp(datetime.strptime(t['departure_time'], '%Y-%m-%d %H:%M:%S'))
         trip['travel_time'] = t['stop_times'][-1]['actual_timestamp'] - \
                               t['stop_times'][0]['actual_timestamp']
         trip['delay'] = max(0,

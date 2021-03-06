@@ -1,4 +1,3 @@
-from models.TrafficAlert import TrafficAlert
 from controller.TripController import TripController
 import datetime
 from time import sleep, time
@@ -6,10 +5,9 @@ from time import sleep, time
 
 class CentralController:
     def __init__(self, api_connector, static_db, dynamic_db):
-        self.api_connector = api_connector
         self.static_db = static_db
         self.dynamic_db = dynamic_db
-        self.trip_controller = TripController(self.api_connector)
+        self.trip_controller = TripController(api_connector)
         self.update_counter = 0
         self.insert_counter = 0
         self.save_counter = 0
@@ -18,6 +16,8 @@ class CentralController:
         self.restore_error_counter = 0
         self.thread_segment_size = 100
         self.refresh_alerts_clock = 0
+        self.refresh_stations_clock = 0
+        self.heartbeat_seconds = 30.0
 
         self.failed = []
         self.nb_restored = 0
@@ -26,46 +26,45 @@ class CentralController:
         self.created = []
         self.inner_queued = 0
         self.outer_queued = 0
+        self.stations = []
 
-    def get_alerts(self):
+    def update_alerts(self):
         self.refresh_alerts_clock = int(time())
-        response = self.api_connector.alert_search()
-        details = response.json()
-        alerts = []
-        alert_ids = details.get('data').get('entry').get('alertIds')
-        references = details.get('data').get('references')
-        alert_references = references.get('alerts')
-        route_references = references.get('routes')
-        for i in alert_ids:
-            alert_details = alert_references.get(i)
-            alert_route_ids = [route_id for route_id in alert_details.get('routeIds') if route_id[4] in ['0', '1', '2']]
-            alert_route_names = []
-            for r in alert_route_ids:
-                alert_route = route_references.get(r)
-                if alert_route:
-                    if alert_route.get('type') == 'BUS':
-                        alert_route_names.append({'route_id': r, 'route_name': alert_route.get('shortName')})
-            if len(alert_route_names) > 0:
-                alerts.append(TrafficAlert(alert_details, alert_route_names))
-        alert_docs = [alert.toJSON() for alert in alerts]
+        alert_docs = self.trip_controller.get_alerts()
 
         delete_res = self.dynamic_db['traffic_alerts'].delete_many({})
         insert_res = self.dynamic_db['traffic_alerts'].insert_many(alert_docs)
 
+    def update_stations(self):
+        stations = self.trip_controller.update_stations()
+        for station in stations:
+            query = {"station_id": station['station_id']}
+            new_values = {"$set": station}
+            update_res = self.dynamic_db['traffic_monitor_station'].update_one(query, new_values)
+            self.refresh_stations_clock = int(time())
+
     def execute_update(self):
         """ Update trips in RealTimeView MongoDB """
-        if not self.changed:
-            return
-        for trip in self.changed:
-            query = {"trip_id": trip['trip_id']}
-            new_values = {"$set": trip}
-            update_res = self.dynamic_db['traffic_monitor_trip'].update_one(query, new_values)
-            self.update_counter += 1
-            # print(update_res.modified_count, trip['trip_id'])
-            assert update_res.modified_count == 1
-            # maybe matched_count instead of modified_count?
-        # TODO: Logging
-        self.changed = []
+        if self.changed:
+            for trip in self.changed:
+                query = {"trip_id": trip['trip_id']}
+                new_values = {"$set": trip}
+                update_res = self.dynamic_db['traffic_monitor_trip'].update_one(query, new_values)
+                self.update_counter += 1
+                # print(update_res.modified_count, trip['trip_id'])
+                assert update_res.modified_count == 1
+                # maybe matched_count instead of modified_count?
+            # TODO: Logging
+            self.changed = []
+
+        if self.stations:
+            for station in self.stations:
+                query = {"station_id": station['station_id']}
+                new_values = {"$set": station}
+                update_res = self.dynamic_db['traffic_monitor_station'].update_one(query, new_values, upsert=True)
+                # assert update_res.modified_count == 1 or update_res.upserted_count == 1
+                # assert update_res.modified_count == 1
+            self.stations = []
 
     def execute_load(self):
         """ Move trips from ActualTrips MySQL to RealTimeView MongoDB """
@@ -132,18 +131,22 @@ class CentralController:
     def restore(self):
         """ Restore trips from RealTimeView MongoDB into memory """
         trip_records = list(self.dynamic_db['traffic_monitor_trip'].find())
-        nb_success, failures = self.trip_controller.restore(trip_records)
+        station_records = list(self.dynamic_db['traffic_monitor_station'].find())
+
+        nb_success, failures = self.trip_controller.restore(trip_records, station_records)
         self.failed.extend(failures)
         self.nb_restored = nb_success
+
         # TODO: Logging
 
     def update(self):
         """ Collect trips to update in RealTimeView MongoDB """
-        trips, finished, failed, inner_queued = self.trip_controller.update()
+        trips, finished, failed, inner_queued, stations = self.trip_controller.update()
         self.changed.extend(trips)
         self.finished.extend(finished)
         self.failed.extend(failed)
         self.inner_queued += inner_queued
+        self.stations.extend(stations)
         # TODO: Logging
 
     def load(self, records):
@@ -161,7 +164,7 @@ class CentralController:
         print("INFO:\tRestoration done.")
 
         print("INFO:\tLoading alerts...")
-        self.get_alerts()
+        self.update_alerts()
         print("INFO:\tLoading alerts done.")
         # TODO: Logging
 
@@ -180,8 +183,13 @@ class CentralController:
 
             if self.refresh_alerts_clock + 60*15 < int(start_time):
                 print("INFO:\tLoading alerts...")
-                self.get_alerts()
+                self.update_alerts()
                 print("INFO:\tLoading alerts finished.")
+
+            if self.refresh_stations_clock + 60*5 < int(start_time):
+                print("INFO:\tRefreshing stations...")
+                self.update_stations()
+                print("INFO:\tRefreshing stations finished.")
 
             print(f"INFO:\tUpdate started...")
             t = time()
@@ -208,7 +216,7 @@ class CentralController:
             self.execute_load()
             print(f"INFO:\tUpdating databases finished. Elapsed time: {str(round(time() - t, 2))}s.")
 
-            print("----------------------- SUMMARY ------------------------------")
+            print("\n----------------------- SUMMARY ------------------------------")
             print(f"INFO:\tFull processing time: {str(round(time() - start_time, 2))}s")
             print(f"INFO:\tAll updates: {str(self.update_counter)}")
             print(f"INFO:\tAll inserts: {str(self.insert_counter)}")
@@ -216,7 +224,7 @@ class CentralController:
             print(f"INFO:\tAll waiting: {str(self.inner_queued + self.outer_queued)}")
             print(f"INFO:\tAll errors (load): {str(self.load_error_counter)}")
             print(f"INFO:\tAll errors (update): {str(self.update_error_counter)}")
-            print("-------------------- END OF SUMMARY --------------------------")
+            print("-------------------- END OF SUMMARY --------------------------\n")
 
-            sleep(15.0 - ((time() - start_time) % 15.0))
+            sleep(self.heartbeat_seconds - ((time() - start_time) % self.heartbeat_seconds))
             # TODO: Logging

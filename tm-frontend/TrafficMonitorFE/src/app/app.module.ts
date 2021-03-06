@@ -27,6 +27,11 @@ import { LandingComponent } from './components/landing/landing.component';
 import {MatCardModule} from "@angular/material/card";
 import {DatePipe} from "@angular/common";
 import {ScrollingModule} from "@angular/cdk/scrolling";
+import { StationListComponent } from './components/station-list/station-list.component';
+import { StopDetailsComponent } from './components/stop-details/stop-details.component';
+import { BadRequestComponent } from './components/error/bad-request/bad-request.component';
+import { ForbiddenComponent } from './components/error/forbidden/forbidden.component';
+import { NotFoundComponent } from './components/error/not-found/not-found.component';
 
 @NgModule({
   declarations: [
@@ -36,6 +41,11 @@ import {ScrollingModule} from "@angular/cdk/scrolling";
     RouteDetailsComponent,
     RouteListComponent,
     LandingComponent,
+    StationListComponent,
+    StopDetailsComponent,
+    BadRequestComponent,
+    ForbiddenComponent,
+    NotFoundComponent,
     // HighchartsChartComponent
   ],
   imports: [

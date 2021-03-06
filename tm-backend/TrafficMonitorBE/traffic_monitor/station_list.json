@@ -1,0 +1,80 @@
+[
+    {
+        "$unwind": {
+            "path": "$stops",
+            "includeArrayIndex": "stop",
+            "preserveNullAndEmptyArrays": true
+        }
+    }, {
+        "$addFields": {
+            "stops.avgDelta": {
+                "$ceil": {
+                    "$divide": [
+                        {
+                            "$reduce": {
+                                "input": "$stops.current_delays",
+                                "initialValue": 0,
+                                "in": {
+                                    "$add": [
+                                        "$$value", "$$this.delay_delta"
+                                    ]
+                                }
+                            }
+                        }, {
+                            "$cond": [
+                                {
+                                    "$ne": [
+                                        {
+                                            "$size": "$stops.current_delays"
+                                        }, 0
+                                    ]
+                                }, {
+                                    "$size": "$stops.current_delays"
+                                }, 1
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }, {
+        "$addFields": {
+            "stops.maxDelta": {
+                "$reduce": {
+                    "input": "$stops.current_delays",
+                    "initialValue": 0,
+                    "in": {
+                        "$cond": [
+                            {
+                                "$gte": [
+                                    "$$this.delay_delta", "$$value"
+                                ]
+                            }, "$$this.delay_delta", "$$value"
+                        ]
+                    }
+                }
+            }
+        }
+    }, {
+        "$group": {
+            "_id": "$_id",
+            "station_id": {
+                "$first": "$station_id"
+            },
+            "station_name": {
+                "$first": "$station_name"
+            },
+            "stops": {
+                "$push": "$stops"
+            }
+        }
+    },
+    {
+      "$project":  {
+        "_id": 0,
+        "station_id": "$station_id",
+        "station_name": "$station_name",
+        "stops": "$stops"
+      }
+    }
+]

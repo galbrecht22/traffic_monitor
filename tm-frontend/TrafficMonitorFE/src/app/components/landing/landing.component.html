@@ -17,7 +17,7 @@
               <mat-cell style="font-size: 12px;" *matCellDef="let alert"> {{alert.header}} </mat-cell>
             </ng-container>
 
-            <!-- Trip ID Definition -->
+            <!-- Routes Definition -->
             <ng-container matColumnDef="routes">
               <mat-header-cell *matHeaderCellDef mat-sort-header> Útvonalak </mat-header-cell>
               <mat-cell *matCellDef="let alert">
@@ -110,7 +110,7 @@
                 <!-- Trip ID Definition -->
                 <ng-container matColumnDef="reference_time">
                   <mat-header-cell *matHeaderCellDef> Érkezés </mat-header-cell>
-                  <mat-cell style="font-size: 12px;" *matCellDef="let stop"> {{stop.reference_time | date: 'HH:mm'}} </mat-cell>
+                  <mat-cell style="font-size: 12px;" *matCellDef="let stop"> {{stop.reference_time | date: 'HH:mm': '+0000'}} </mat-cell>
                 </ng-container>
 
                 <!-- Trip ID Definition -->
@@ -118,7 +118,7 @@
                   <mat-header-cell *matHeaderCellDef> Valós </mat-header-cell>
                   <mat-cell style="font-size: 12px;" *matCellDef="let stop; let i = index"
                   [ngStyle]="{'opacity': (stop.is_predicted == false) ? '1.0' : '0.4',
-                              'color': (stop.actual_timestamp - stop.reference_timestamp < 60) ? '#00BB00' : 'red'}"> {{stop.actual_time | date: 'HH:mm'}} </mat-cell>
+                              'color': (stop.actual_timestamp - stop.reference_timestamp < 60) ? '#00BB00' : 'red'}"> {{stop.actual_time | date: 'HH:mm': '+0000'}} </mat-cell>
                 </ng-container>
 
                 <!-- Header and Row Declarations -->

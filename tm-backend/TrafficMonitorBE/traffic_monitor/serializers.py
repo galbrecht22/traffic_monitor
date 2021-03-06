@@ -1,14 +1,14 @@
 from rest_framework import serializers
-from traffic_monitor.models import Trip, StopTime, RouteTrip, Route
+from .models import Trip, StopTime, RouteTrip, Route, Stop, Station, StopTrip
 
 
 class StopTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = StopTime
-        fields = ('stop_id', 'stop_name',
+        fields = ('stop_id', 'stop_name', 'station_id',
                   'reference_timestamp', 'actual_timestamp',
                   'reference_time', 'actual_time', 'delay',
-                  'is_predicted', 'is_next')
+                  'delay_delta', 'is_predicted', 'is_next')
         abstract = True
 
 
@@ -37,3 +37,30 @@ class RouteSerializer(RouteTripSerializer):
     class Meta:
         model = Route
         fields = ('route_id', 'route_name', 'trips')
+
+
+class StopTripSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StopTrip
+        fields = ('trip_id', 'route_id', 'route_name',
+                  'arrival_time', 'destination',
+                  'delay', 'delay_delta')
+        abstract = True
+
+
+class StopSerializer(StopTripSerializer):
+    trips = StopTripSerializer(many=True, read_only=True)
+    current_delays = serializers.JSONField()
+
+    class Meta:
+        model = Stop
+        fields = ('stop_id', 'stop_name', 'station_id', 'maxDelta', 'avgDelta', 'trips', 'current_delays')
+        abstract = True
+
+
+class StationSerializer(StopSerializer):
+    stops = StopSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Station
+        fields = ('station_id', 'station_name', 'maxDelta', 'avgDelta', 'stops')

@@ -1,0 +1,118 @@
+<div class="wrapper">
+  <div class="station-table">
+    <div class="mat-elevation-z8" style="display: block; max-width: 1200px">
+      <mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
+
+        <!-- Station ID Definition -->
+        <ng-container matColumnDef="station_id">
+          <mat-header-cell *matHeaderCellDef mat-sort-header>Terület ID</mat-header-cell>
+          <mat-cell style="font-size: 14px;" *matCellDef="let station"> {{station.station_id}}</mat-cell>
+        </ng-container>
+
+        <!-- Station Name Definition -->
+        <ng-container matColumnDef="station_name">
+          <mat-header-cell *matHeaderCellDef mat-sort-header>Terület Név</mat-header-cell>
+          <mat-cell style="font-size: 14px;" *matCellDef="let station"> {{station.station_name}}</mat-cell>
+        </ng-container>
+
+        <!-- Station Stops Definition -->
+        <ng-container matColumnDef="stops">
+          <mat-header-cell *matHeaderCellDef mat-sort-header>Állapot</mat-header-cell>
+          <mat-cell *matCellDef="let station">
+            <div class="stop_buttons">
+              <div *ngFor="let stop of station.stops">
+                <button class="stopBtn"
+                        [style.background-color]="getBgForStop(stop)"></button>
+              </div>
+            </div>
+          </mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="maxDelta">
+          <mat-header-cell *matHeaderCellDef mat-sort-header>Várható késés</mat-header-cell>
+          <mat-cell style="font-size: 14px;" *matCellDef="let station">{{station.avgDelta}} - {{station.maxDelta}}p</mat-cell>
+        </ng-container>
+
+        <!-- Analytics Definition -->
+        <ng-container matColumnDef="watch">
+          <mat-header-cell *matHeaderCellDef> Watch </mat-header-cell>
+          <mat-cell *matCellDef="let station">
+            <button mat-button (click)="watchStation(station)">
+              <mat-icon>analytics</mat-icon>
+            </button>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Header and Row Declarations -->
+        <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+        <mat-row *matRowDef="let station; columns: displayedColumns;"></mat-row>
+      </mat-table>
+
+      <mat-paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+    </div>
+  </div>
+  <div class="stop-table">
+    <div *ngIf="currentStation">
+      <div class="mat-elevation-z8 table-responsive">
+        <mat-table [dataSource]="stopDataSource" class="mat-elevation-z8">
+
+          <!-- Stop ID Definition -->
+          <ng-container matColumnDef="stop_id">
+            <mat-header-cell *matHeaderCellDef>Stop ID</mat-header-cell>
+            <mat-cell style="font-size: 12px;" *matCellDef="let stop">{{stop.stop_id}}</mat-cell>
+          </ng-container>
+
+          <!-- Stop Name Definition -->
+          <ng-container matColumnDef="stop_name">
+            <mat-header-cell *matHeaderCellDef>Stop Name</mat-header-cell>
+            <mat-cell style="font-size: 12px;" *matCellDef="let stop">{{stop.stop_name}}</mat-cell>
+          </ng-container>
+
+          <!-- Stop Routes Definition -->
+          <ng-container matColumnDef="routes">
+            <mat-header-cell *matHeaderCellDef> Útvonalak </mat-header-cell>
+            <mat-cell *matCellDef="let stop">
+              <div class="routes">
+                <div *ngFor="let route of getRoutes(stop)">
+                  <button class="routeBtn">{{route}}</button>
+                </div>
+              </div>
+            </mat-cell>
+          </ng-container>
+
+          <!-- Stop Health Definition -->
+          <ng-container matColumnDef="health">
+            <mat-header-cell *matHeaderCellDef> Állapot </mat-header-cell>
+            <mat-cell *matCellDef="let stop">
+              <div class="stop_buttons">
+                <div>
+                  <button class="stopBtn"
+                          [style.background-color]="getBgForStop(stop)"></button>
+                </div>
+              </div>
+            </mat-cell>
+          </ng-container>
+
+          <!-- Analytics Definition -->
+          <ng-container matColumnDef="watchStop">
+            <mat-header-cell *matHeaderCellDef> Watch </mat-header-cell>
+            <mat-cell *matCellDef="let stop">
+              <button mat-button (click)="watchStop(stop)">
+                <mat-icon>analytics</mat-icon>
+              </button>
+            </mat-cell>
+          </ng-container>
+
+          <!-- Header and Row Declarations -->
+          <mat-header-row *matHeaderRowDef="displayedStopColumns; sticky: true"></mat-header-row>
+          <mat-row *matRowDef="let stop; columns: displayedStopColumns;"></mat-row>
+        </mat-table>
+
+      </div>
+    </div>
+    <div *ngIf="!currentStation">
+      <br />
+      <p>Please click on a station...</p>
+    </div>
+  </div>
+</div>

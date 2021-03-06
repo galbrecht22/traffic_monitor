@@ -2,7 +2,8 @@ import os
 import json
 import requests
 from math import floor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from time import time
 
 from io import StringIO
 from html.parser import HTMLParser
@@ -15,16 +16,26 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import ListAPIView
+from rest_framework.filters import SearchFilter, OrderingFilter
 
-from traffic_monitor.models import Trip, Route
-from traffic_monitor.serializers import TripSerializer, RouteTripSerializer, RouteSerializer
+from traffic_monitor.models import Trip, Route, Stop, Station
+from traffic_monitor.serializers import TripSerializer, RouteTripSerializer, RouteSerializer, StopSerializer, \
+    StationSerializer
 
 from bson import ObjectId
 
 from pymongo import MongoClient
 
 client = MongoClient(
-        'mongodb://localhost:27017')
+    'mongodb://localhost:27017')
+
+todays_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+tomorrows_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+tomorrows_day = tomorrows_date.day + 1
+tomorrows_date.replace(day=tomorrows_day)
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -130,15 +141,36 @@ def trip_list(request):
 
 @api_view(['GET'])
 def trip_detail(request, pk):
-
-    try:
-        trip = Trip.objects.get(pk=pk)
-    except Trip.DoesNotExist:
-        return JsonResponse({'message': 'The trip does not exist'},
-                            status=status.HTTP_404_NOT_FOUND,
-                            json_dumps_params={'indent': 2, 'ensure_ascii': False})
-
     if request.method == 'GET':
+
+        try:
+            trip = Trip.objects.get(pk=pk)
+        except Trip.DoesNotExist:
+            print('In Exception...')
+            trip = client['traffic_monitor']['finished_buffer'].find_one({
+                'trip_id': pk}, {"_id": 0})
+            if trip:
+                return JsonResponse(trip, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+            else:
+                print('Not found in buffer')
+                trip = client['traffic_monitor']['finished_trips'].find_one({
+                    'trip_id': pk, "departure_time": {"$gte": todays_date, "$lt": tomorrows_date}}, {"_id": 0})
+                if trip:
+                    return JsonResponse(trip, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+                else:
+                    print('Not found in finished')
+                    trip = client['traffic_monitor']['failed_trips'].find_one({
+                        "snapshot": {"$exists": True}, "snapshot.trip_id": pk,
+                        "time": {"$gte": todays_date, "$lt": tomorrows_date}
+                    }, {"_id": 0})
+                    if trip:
+                        return JsonResponse(trip, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+                    else:
+                        print('Not Found anywhere.')
+                        return JsonResponse({'message': 'The trip does not exist'},
+                                            status=status.HTTP_404_NOT_FOUND,
+                                            json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
         trip_serializer = TripSerializer(trip)
         return JsonResponse(trip_serializer.data, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
@@ -153,8 +185,8 @@ def trip_list_finished(request):
         return JsonResponse(trips_serializer.data, safe=False, json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
 
-def get_pipeline(pk, interval):
-    with open('traffic_monitor/pipelines.json') as f:
+def get_route_pipeline(pk, interval):
+    with open('traffic_monitor/route_details.json') as f:
         pipeline = json.load(f)
     pipeline[1]['$match']['route_id'] = pk
     pipeline[0]['$addFields']['trips']['$map']['in']['timeBucket']['$mod'][0]['$multiply'][0]['$floor']['$divide'][
@@ -170,7 +202,7 @@ def route_travel_times(request, pk):
     i = request.GET.get('interval', None)
     if i:
         interval = int(i)
-    result = client['traffic_monitor']['traffic_monitor_route'].aggregate(pipeline=get_pipeline(pk, interval))
+    result = client['traffic_monitor']['traffic_monitor_route'].aggregate(pipeline=get_route_pipeline(pk, interval))
 
     res = [doc for doc in result]
     route_name = res[0]['route_name']
@@ -221,3 +253,84 @@ def alerts(request):
         r = {'alerts': res}
         return JsonResponse(json.loads(JSONEncoder().encode(r)), json_dumps_params={'indent': 2, 'ensure_ascii': False})
 
+
+def json_dt_patch(o):
+    import datetime
+    if isinstance(o, date) or isinstance(o, datetime):
+        return o.strftime("%Y/%m/%d %H:%M:%S")
+    return o
+
+
+@api_view(['GET'])
+def station_list(request):
+    if request.method == 'GET':
+        # t = time()
+        # stations = Station.objects.all()
+        # print(f"station.objects.all(): {round(time() - t, 2)}s")
+        #
+        # t = time()
+        # stations_serializer = StationSerializer(stations, many=True)
+        # print(f"StationSerializer(stations, many=True): {round(time() - t, 2)}s")
+        #
+        # t = time()
+        # # print(stations_serializer.data)
+        # jsonResponse = JsonResponse(stations_serializer.data, safe=False,
+        #                             json_dumps_params={'indent': 2, 'ensure_ascii': False})
+        # print(f"JsonResponse(stations_serializer.data, safe=False): {round(time() - t, 2)}s")
+        # return jsonResponse
+
+        # t = time()
+        with open('traffic_monitor/station_list.json') as f:
+            pipeline = json.load(f)
+        # print(f"load: {time() - t}s")
+
+        # t = time()
+        result = client['traffic_monitor']['traffic_monitor_station'].aggregate(pipeline=pipeline)
+        # print(f"client: {time() - t}s")
+
+        # t = time()
+        res = [doc for doc in result]
+        # print(f"result: {time() - t}s")
+
+        r = {'stations': res}
+        # print(len(res))
+
+        t = time()
+        # jsonResponse = JsonResponse(json.loads(json.dumps(r, default=json_dt_patch)),
+        #                             json_dumps_params={'indent': 2, 'ensure_ascii': False}, safe=False)
+        jsonResponse = Response(r)
+        print(f"Building JsonResponse: {time() - t}s")
+        return jsonResponse
+
+
+@api_view(['GET'])
+def stop_detail(request, pk):
+    if request.method == 'GET':
+        stop_pk = request.GET.get('stop_id', None)
+        if not stop_pk:
+            return JsonResponse({'message': 'No stop specified'},
+                                status=status.HTTP_404_NOT_FOUND,
+                                json_dumps_params={'indent': 2, 'ensure_ascii': False})
+        try:
+            station = Station.objects.get(pk=pk)
+        except Station.DoesNotExist:
+            return JsonResponse({'message': 'The station does not exist'},
+                                status=status.HTTP_404_NOT_FOUND,
+                                json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+        stop = next((stop for stop in station.stops if stop['stop_id'] == stop_pk), None)
+        if not stop:
+            return JsonResponse({'message': 'The stop does not exist'},
+                                status=status.HTTP_404_NOT_FOUND,
+                                json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+        stop_serializer = StopSerializer(stop)
+        return JsonResponse(stop_serializer.data, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+
+
+class StationListView(ListAPIView):
+    queryset = Station.objects.all()
+    serializer_class = StationSerializer
+    pagination_class = PageNumberPagination
+    filter_backends = (SearchFilter, OrderingFilter)
+    search_fields = ('station_id', 'station_name', 'maxDelta', 'avgDelta')

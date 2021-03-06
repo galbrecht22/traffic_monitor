@@ -3,6 +3,8 @@ from time import time
 from models.StopTime import StopTime
 from models.Trip import Trip
 from models.TripState import TripState
+from models.TrafficAlert import TrafficAlert
+from controller.StopController import StopController
 from math import ceil
 from threading import Thread
 
@@ -21,6 +23,7 @@ class TripController:
 
         self.thread_segment_size = 100
         self.api_connector = api_connector
+        self.stop_controller = StopController()
 
     @staticmethod
     def create_error_record(trip_id: str, error_code: str, cause: str, description: str = None, snapshot=None):
@@ -50,8 +53,30 @@ class TripController:
                     trip.next_stop_index += 1
                     trip.next_stop_name = trip.stop_times[i + 1].stop_name
 
+    def get_alerts(self):
+        response = self.api_connector.alert_search()
+        details = response.json()
+        alerts = []
+        alert_ids = details.get('data').get('entry').get('alertIds')
+        references = details.get('data').get('references')
+        alert_references = references.get('alerts')
+        route_references = references.get('routes')
+        for i in alert_ids:
+            alert_details = alert_references.get(i)
+            alert_route_ids = [route_id for route_id in alert_details.get('routeIds') if route_id[4] in ['0', '1', '2']]
+            alert_route_names = []
+            for r in alert_route_ids:
+                alert_route = route_references.get(r)
+                if alert_route:
+                    if alert_route.get('type') == 'BUS':
+                        alert_route_names.append({'route_id': r, 'route_name': alert_route.get('shortName')})
+            if len(alert_route_names) > 0:
+                alerts.append(TrafficAlert(alert_details, alert_route_names))
+        return [alert.toJSON() for alert in alerts]
+
+
     # Main functions
-    def restore(self, trip_records):
+    def restore(self, trip_records, station_records):
         self.failedDTO = []
         N = int(ceil(len(trip_records) / self.thread_segment_size))
         threads = []
@@ -65,6 +90,8 @@ class TripController:
         for t in threads:
             t.join()
         print("INFO:\tRestoring finished.")
+
+        self.stop_controller.restore(station_records)
 
         return len(self.trips), self.failedDTO
 
@@ -85,6 +112,7 @@ class TripController:
                 stop_time_refs = trip_record.get('stop_times')
                 stop_times = [StopTime(stop_id=stop_time_refs[i].get('stop_id'),
                                        stop_name=stop_time_refs[i].get('stop_name'),
+                                       station_id=stop_time_refs[i].get('station_id'),
                                        ref_timestamp=stop_time_refs[i].get('reference_timestamp'),
                                        actual_timestamp=stop_time_refs[i].get('actual_timestamp'),
                                        # location=trip_record.get('stop_times')[i].get('location'),
@@ -129,7 +157,8 @@ class TripController:
         return ([trip.toMongo() for trip in self.trips if trip.trip_id not in self.queued_ids],
                 self.finishedDTO,
                 self.failedDTO,
-                self.inner_queued)
+                self.inner_queued,
+                self.stop_controller.fetch_updates())
 
     def update_segment(self, segment):
         for trip in segment:
@@ -160,7 +189,7 @@ class TripController:
             self.update_trip(trip, trip_details)
 
     def update_trip(self, trip, trip_details):
-        # stop_offset = trip.next_stop_index
+        stop_offset = trip.next_stop_index
         nb_stops = len(trip.stop_times)
         trip.latest_update = dt.fromtimestamp(trip_details.get('currentTime') // 1000)
         if 'vehicle' in trip_details.get('data').get('entry'):
@@ -172,12 +201,12 @@ class TripController:
         assert len(stop_times) == nb_stops
 
         # Refresh all stop times in every update to achieve more accurate data
-        trip.next_stop_index = 0
-        trip.next_stop_name = trip.stop_times[0].stop_name
+        # trip.next_stop_index = 0
+        # trip.next_stop_name = trip.stop_times[0].stop_name
 
         # Update stop times
         # for i in range(stop_offset, nb_stops):
-        for i in range(nb_stops):
+        for i in range(stop_offset, nb_stops):
 
             reference_time_str = 'departureTime' if i == 0 else 'arrivalTime'
             actual_time_str = 'predictedDepartureTime' if i == 0 else 'predictedArrivalTime'
@@ -196,6 +225,9 @@ class TripController:
             trip.stop_times[i].delay = max(
                 0, trip.stop_times[i].actual_timestamp - trip.stop_times[i].reference_timestamp)
 
+            trip.stop_times[i].delay_delta = \
+                max(0, trip.stop_times[i].delay - trip.stop_times[i-1].delay) if i > 0 else trip.stop_times[i].delay
+
             if dt.timestamp(trip.latest_update) - dt.timestamp(actual_time) > 60:
                 trip.stop_times[i].is_predicted = False
                 if i == nb_stops - 1:
@@ -203,6 +235,7 @@ class TripController:
                 else:
                     trip.next_stop_index += 1
                     trip.next_stop_name = trip.stop_times[i + 1].stop_name
+                self.stop_controller.update(trip.stop_times[i], trip)
         trip.delay = trip.stop_times[trip.next_stop_index].delay
 
     def load(self, new_records):
@@ -248,6 +281,7 @@ class TripController:
             stop_times = [StopTime(
                 stop_id=stop_times_obj[i].get('stopId'),
                 stop_name=stops_obj.get(stop_times_obj[i].get('stopId')).get('name'),
+                station_id=stops_obj.get(stop_times_obj[i].get('stopId')).get('parentStationId'),
                 ref_timestamp=stop_times_obj[i].get('arrivalTime') if i > 0 else stop_times_obj[i].get('departureTime'),
                 actual_timestamp=stop_times_obj[i].get('predictedArrivalTime') if i > 0 else stop_times_obj[i].get(
                     'predictedDepartureTime'),
@@ -280,3 +314,6 @@ class TripController:
             self.createdDTO.append(trip.toMongo())
 
         # TODO: Logging
+
+    def update_stations(self):
+        return self.stop_controller.update_stations()
